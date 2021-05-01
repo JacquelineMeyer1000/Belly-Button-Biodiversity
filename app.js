@@ -1,6 +1,6 @@
 function InitDashboard() {
 
-  d3.json("./data/samples.json").then(function (data) {
+  d3.json("data/samples.json").then(function (data) {
       
       // pull data
       var samples = data.samples;
