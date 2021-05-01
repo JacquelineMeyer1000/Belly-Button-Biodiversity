@@ -1,7 +1,7 @@
 .jumbotron {
 	color: #0000FF;
 	font-family: Garamond;
-	background-image: url("Images/malebellybutton.jpg");
+	background-image: url("/Images/malebellybutton.jpg");
 	background-size: cover;
 	background-repeat: no-repeat;
 	background-position: center;
