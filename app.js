@@ -1,13 +1,12 @@
 function InitDashboard() {
 
   d3.json("./data/samples.json").then(function (data) {
-
+      
+      // pull data
       var samples = data.samples;
 
-      // select and populate the dropdwon
+      // select and populate the dropdown with options
       var select = document.getElementById("selDataset");
-
-      // create dropdown options
       var options = document.querySelectorAll('#selDataset option');
 
       if (options.length === 0) {
@@ -20,83 +19,25 @@ function InitDashboard() {
           };
       };
 
-      // get current dropdown value
+      // create dropdown value
       var dropdownMenu = d3.select("#selDataset");
       var currentID = dropdownMenu.property("value");
 
-      // filter based on id
+      // create id filter 
       var result = samples.filter(obj => {
           return obj.id === currentID
       });
 
-      // Storing vars for chart data
-      var sampleValues = result[0].sample_values;
-      var sampleValuesTen = [...sampleValues]
-      sampleValuesTen = sampleValuesTen.slice(0, 10); // Add line to reverse so chart is flipped
-      var otuIDs = result[0].otu_ids;
-      var otuIdNums = [...otuIDs];
-      var otuLabels = result[0].otu_labels;
-
-      // adding OTU id to the y axis as f-string
-      otuIDs.forEach(function (part, index, otuIDs) {
-          otuIDs[index] = `OTU ${otuIDs[index]}`;
-      });
-
-      // Create trace for hbar plot
-      var hbarData = [{
-          type: 'bar',
-          x: sampleValuesTen,
-          y: otuIDs,
-          text: otuLabels,
-          orientation: 'h'
-      }];
-
-      // create the hbar chart
-      Plotly.newPlot('bar', hbarData);
-
-      // color lists for marker colors
-      var colors = ['pink', 'red', 'orange', 'yellow', 'green', 'blue', 'grey', 'black']
-      var markerColors = [];
-
-      // put a bunch of colors into an array
-      for (var i = 0; i < otuIdNums.length; i++) {
-          var counter = i % 8;
-          counter = Math.floor(counter);
-          console.log(counter);
-          markerColors.push(colors[counter]);
-      };
-      // trace for bubble chart
-      var bubbleData = [{
-          x: otuIdNums,
-          y: sampleValues,
-          text: otuLabels,
-          mode: 'markers',
-          marker: {
-              color: markerColors,
-              size: sampleValues
-          }
-      }];
-
-      // bubble chart layout
-      var bubbleLayout = {
-          showlegend: false,
-          xaxis: {
-              title: 'OTU ID'
-          }
-      };
-
-      Plotly.newPlot('bubble', bubbleData, bubbleLayout);
-
       // Clear out Demographic info panel before updating
       document.getElementById("sample-metadata").innerHTML = "";
 
-      // Filter out the metadata corresponding to the selected ID, similar to filtering the sample values above
+      // Filter out the metadata by selected ID
       var metadata = data.metadata;
       var currentMeta = metadata.filter(obj => {
           return obj.id == currentID
       });
 
-      // create & assign metadata variables for the demographic info panel
+      // create & assign metadata variables for the demo info panel
       var ethnicityMeta = currentMeta[0].ethnicity;
       var genderMeta = currentMeta[0].gender;
       var ageMeta = currentMeta[0].age;
@@ -104,12 +45,12 @@ function InitDashboard() {
       var bbtypeMeta = currentMeta[0].bbtype;
       var wfreqMeta = currentMeta[0].wfreq;
       
-      // add list to the Demographic Info panel
+      // add list to the demo info panel
       var sampleList = [`id: ${currentID}`, `ethnicity: ${ethnicityMeta}`, `gender: ${genderMeta}`, `age: ${ageMeta}`, `location: ${locationMeta}`, `bbtype: ${bbtypeMeta}`, `wfreq: ${wfreqMeta}`];
       var panel = document.getElementById("sample-metadata");
       var ul = document.createElement("ul");
       
-      // create all the li
+      // create li
       for (i = 0; i <= sampleList.length - 1; i++) {
           var li = document.createElement('li');
           li.innerHTML = sampleList[i];
@@ -119,6 +60,78 @@ function InitDashboard() {
 
       // append ul
       panel.appendChild(ul);
+
+      // store variabless for chart
+      var sampleValues = result[0].sample_values;
+      var sampleValuesTen = [...sampleValues]
+      var otuIDs = result[0].otu_ids;
+      var otuIdNums = [...otuIDs];
+      var otuLabels = result[0].otu_labels;
+
+      sampleValuesTen = sampleValuesTen.slice(0, 10); // flip chart
+
+      // add OTU id to the y axis as f-string
+      otuIDs.forEach(function (part, index, otuIDs) {
+          otuIDs[index] = `OTU ${otuIDs[index]}`;
+      });
+
+      // create trace for hbar 
+      var hbarData = [{
+          type: 'bar',
+          x: sampleValuesTen,
+          y: otuIDs,
+          text: otuLabels,
+          orientation: 'h'
+      }];
+      
+      // hbar layout
+      var hbarLayout = {
+        title: "Top 10 OTU (Operational Taxonomic Unit) IDs",
+        yaxis:{
+            autorange: "reversed"
+        }
+    };
+
+      // create hbar
+      Plotly.newPlot('bar', hbarData, hbarLayout);
+
+      // create list for marker colors
+      var colors = ['pink', 'red', 'orange', 'blue', 'yellow', 'purple', 'green', 'brown', 'lime', 'violet']
+      var markerColors = [];
+
+      // input colors into an array
+      for (var i = 0; i < otuIdNums.length; i++) {
+          var counter = i % 10;
+          counter = Math.floor(counter);
+          console.log(counter);
+          markerColors.push(colors[counter]);
+      };
+     
+      // trace for bubble chart
+      var bubbleData = [{
+          x: otuIdNums,
+          y: sampleValues,
+          text: otuLabels,
+          mode: 'markers',
+          marker: {
+              color: markerColors,
+              size: sampleValues,
+              colorscale: "electric"
+          }
+      }];
+
+      // bubble chart layout
+      var bubbleLayout = {
+          title: 'Bacteria Cultures per Sample',
+          hovermode: 'closest',
+          showlegend: false,
+          xaxis: {
+              title: 'OTU (Operational Taxonomic Unit) ID'
+          }
+      };
+
+      Plotly.newPlot('bubble', bubbleData, bubbleLayout);
+      
   });
 };
 
