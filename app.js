@@ -1,138 +1,135 @@
-function InitDashboard() {
+//Portions of code are from the bootcamp office hours tutorial.
+console.log("app.js loaded");
 
-  d3.json("data/samples.json").then(function (data) {
-      
-      // pull data
-      var samples = data.samples;
+function init() {
+    //Populate dropdown
+    var dropdown = d3.select("#selDataset");
 
-      // select and populate the dropdown with options
-      var select = document.getElementById("selDataset");
-      var options = document.querySelectorAll('#selDataset option');
+    d3.json("data/samples.json").then(d => {
+        console.log(d);
 
-      if (options.length === 0) {
+        var sampleNames = d.names;
 
-          // populate dropdown with loop
-          for (var i = 0; i < samples.length; i++) {
-              var option = document.createElement('option');
-              option.text = samples[i].id;
-              select.add(option, 0);
-          };
-      };
+        
+        sampleNames.forEach(sample => {
+            dropdown.append("option")
+                .text(sample)
+                .property("value", sample);
+        });
 
-      // create dropdown value
-      var dropdownMenu = d3.select("#selDataset");
-      var currentID = dropdownMenu.property("value");
+    //Get initial selected dropdown value
+    optionSelected(sampleNames[0]);
 
-      // create id filter 
-      var result = samples.filter(obj => {
-          return obj.id === currentID
-      });
-
-      // Clear out Demographic info panel before updating
-      document.getElementById("sample-metadata").innerHTML = "";
-
-      // Filter out the metadata by selected ID
-      var metadata = data.metadata;
-      var currentMeta = metadata.filter(obj => {
-          return obj.id == currentID
-      });
-
-      // create & assign metadata variables for the demo info panel
-      var ethnicityMeta = currentMeta[0].ethnicity;
-      var genderMeta = currentMeta[0].gender;
-      var ageMeta = currentMeta[0].age;
-      var locationMeta = currentMeta[0].location;
-      var bbtypeMeta = currentMeta[0].bbtype;
-      var wfreqMeta = currentMeta[0].wfreq;
-      
-      // add list to the demo info panel
-      var sampleList = [`id: ${currentID}`, `ethnicity: ${ethnicityMeta}`, `gender: ${genderMeta}`, `age: ${ageMeta}`, `location: ${locationMeta}`, `bbtype: ${bbtypeMeta}`, `wfreq: ${wfreqMeta}`];
-      var panel = document.getElementById("sample-metadata");
-      var ul = document.createElement("ul");
-      
-      // create li
-      for (i = 0; i <= sampleList.length - 1; i++) {
-          var li = document.createElement('li');
-          li.innerHTML = sampleList[i];
-          li.setAttribute('style', 'display: block;');
-          ul.appendChild(li);
-      };
-
-      // append ul
-      panel.appendChild(ul);
-
-      // store variabless for chart
-      var sampleValues = result[0].sample_values;
-      var sampleValuesTen = [...sampleValues]
-      var otuIDs = result[0].otu_ids;
-      var otuIdNums = [...otuIDs];
-      var otuLabels = result[0].otu_labels;
-
-      sampleValuesTen = sampleValuesTen.slice(0, 10); // flip chart
-
-      // add OTU id to the y axis as f-string
-      otuIDs.forEach(function (part, index, otuIDs) {
-          otuIDs[index] = `OTU ${otuIDs[index]}`;
-      });
-
-      // create trace for hbar 
-      var hbarData = [{
-          type: 'bar',
-          x: sampleValuesTen,
-          y: otuIDs,
-          text: otuLabels,
-          orientation: 'h'
-      }];
-      
-      // hbar layout
-      var hbarLayout = {
-        title: "Top 10 OTU (Operational Taxonomic Unit) IDs",
-        yaxis:{
-            autorange: "reversed"
-        }
-    };
-
-      // create hbar
-      Plotly.newPlot('bar', hbarData, hbarLayout);
-
-      // create list for marker colors
-      var colors = ['pink', 'red', 'orange', 'blue', 'yellow', 'purple', 'green', 'brown', 'lime', 'violet']
-      var markerColors = [];
-
-      // input colors into an array
-      for (var i = 0; i < otuIdNums.length; i++) {
-          var counter = i % 10;
-          counter = Math.floor(counter);
-          console.log(counter);
-          markerColors.push(colors[counter]);
-      };
-     
-      // trace for bubble chart
-      var bubbleData = [{
-          x: otuIdNums,
-          y: sampleValues,
-          text: otuLabels,
-          mode: 'markers',
-          marker: {
-              color: markerColors,
-              size: sampleValues,
-              colorscale: "electric"
-          }
-      }];
-
-      // bubble chart layout
-      var bubbleLayout = {
-          title: 'Bacteria Cultures per Sample',
-          hovermode: 'closest',
-          showlegend: false,
-          xaxis: {
-              title: 'OTU (Operational Taxonomic Unit) ID'
-          }
-      };
-
-      Plotly.newPlot('bubble', bubbleData, bubbleLayout);
-      
-  });
+    });
 };
 
-InitDashboard();
+function optionSelected(selectedSample){
+    console.log(selectedSample);
+
+    //Draw graphs and get demo data
+    drawGraphs(selectedSample);
+    getDemoData(selectedSample);
+
+};
+
+function drawGraphs(selectedSample){
+    //console.log(`Draw Bargraph for ${selectedSample}`);
+
+    d3.json("data/samples.json").then(d => {
+
+        var samples = d.samples;
+        var resultArray = samples.filter(s => s.id == selectedSample);
+        var result = resultArray[0];
+
+        var otu_ids = result.otu_ids;
+        var otu_labels = result.otu_labels;
+        var sample_values = result.sample_values;
+
+        drawBargraph(otu_ids, otu_labels, sample_values);
+        drawBubbleChart(otu_ids, otu_labels, sample_values);
+        
+    });
+
+};
+
+function drawBargraph(otu_ids, otu_labels, sample_values){
+    //draw Bargraph based on selected sample ID
+    xticks = sample_values.slice(0,10).reverse();
+    yticks = otu_ids.slice(0,10).map(otuID => `OTU ${otuID}`).reverse();
+
+    var barTrace = {
+        x: xticks,
+        y: yticks,
+        type: "bar",
+        text: otu_labels.slice(0,10).reverse(),
+        orientation: "h"
+    }
+
+    var barData = [barTrace];
+
+    var barLayout = {
+        title: "Top 10 Bacteria Cultures Found",
+        margin: {t:30, l:150}
+    }
+
+    Plotly.newPlot("bar", barData, barLayout);
+
+};
+
+function drawBubbleChart(otu_ids, otu_labels, sample_values) {
+    //draw Bubble Chart based on selected sample ID
+    var bubbleTrace = {
+        x: otu_ids,
+        y: sample_values,
+        text: otu_labels,
+        mode: 'markers',
+        marker: {
+            color: otu_ids,
+            size: sample_values
+        }
+    }
+
+    var bubbleData = [bubbleTrace];
+
+    var bubbleLayout = {
+        height: 600,
+        width: 1200
+    };
+
+    Plotly.newPlot('bubble', bubbleData, bubbleLayout);
+};
+
+
+function getDemoData(selectedSample){
+    console.log(`Show Demographic Data for ${selectedSample}`);
+
+    d3.json("data/samples.json").then(d => {
+
+        var metadata = d.metadata;
+        var resultArray = metadata.filter(m => m.id == selectedSample);
+        var result = resultArray[0];
+
+        console.log(result);
+
+        //Object.entries(result).forEach(([key, value]) => console.log(`${key}: ${value}`));
+
+        
+        var panel = d3.select("#sample-metadata");
+        panel.html("");
+
+        var table = panel.append("table");
+
+        Object.entries(result).forEach(([key, value]) => {
+            var row = table.append("tr");
+            row.append("td").text(`${key}: `)
+                .classed("key");
+            row.append("td").text(value);
+        });
+
+        console.log(table);
+
+    });
+
+};
+
+init();
